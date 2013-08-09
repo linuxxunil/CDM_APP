@@ -1,0 +1,46 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=BIG5">
+<title>CDM Test Page</title>
+</head>
+<body>
+<h1>CDM Test Page</h1>
+1. Create SME ID<br/>
+<form name="create_sme" action="test/create_sme.jsp" method="post">
+SME-ID <input type="text" name="smeID"/><br/>
+QuotaSize <input type="text" name="quotaSize"/><br/>
+<input type="submit" value="建立" /> 
+</form><br/>
+
+2. Delete SME ID<br/>
+<form name="delete_sme" action="test/delete_sme.jsp" method="post">
+SME-ID <input type="text" name="smeID"/>&nbsp;&nbsp;<input type="submit" value="刪除" /> 
+</form><br/>
+
+3. Upload file to SME<br/>
+<form name="uploadfile" enctype="multipart/form-data" action="test/upload_file.jsp" method="post">
+SME-ID <input type="text" name="smeID"/><br/>
+remote path <input type="text" name="remote"/><br/>
+local path  <input type="file" name="lcoal" size="50" maxlength="20" /><br/>
+
+<input type="submit" value="上傳"/> 
+</form><br/>
+
+4. Delete file from SME<br/>
+<form name="delete_file" action="test/delete_file.jsp" method="post">
+SME-ID <input type="text" name="smeID"/><br/>
+remote path  <input type="text" name="remote"/><br/>
+<input type="submit" value="刪除"/>
+</form><br/>
+
+
+5. List Bucket of SME<br/>
+<form name="list_bucket" action="test/list_bucket.jsp" method="post">
+smeID <input type="text" name="smeID"/>&nbsp;&nbsp;<input type="submit" value="查詢"/> 
+</form><br/>
+
+
+</form><br/>
+</body>
+</html>
