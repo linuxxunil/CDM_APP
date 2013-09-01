@@ -1,23 +1,36 @@
 package csmp.cdm;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
 import java.util.Hashtable;
+import java.util.UUID;
 //import java.util.Iterator;
 //import java.util.LinkedList;
 
 import csmp.cbm.LocalBackupClient;
 import csmp.cbm.SoapClient;
 import csmp.common.Log;
+import csmp.crypt.AESEncrypt;
 import csmp.csm.BlobClient;
 import csmp.csm.HttpHandleGet;
 import csmp.result.BucketOfSME;
 
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 class SmeInfo {
 	private Hashtable<String,String> hash = null;
@@ -29,6 +42,8 @@ class SmeInfo {
 
 	private SmeInfo() {
 		hash = new Hashtable<String,String>();
+		//setParm( _keys[0] , "192.168.11.200");
+		//setParm( _keys[1] , "9981");
 		setParm( _keys[0] , System.getenv("vblob_host"));
 		setParm( _keys[1] , System.getenv("vblob_port"));
 	}
@@ -307,7 +322,7 @@ public class LocalBackup implements Runnable {
 		
 		
 			int ret = blobClient.listBucketOfSME( smeInfo.getParm("smeID") , bucketOfSME );
-			System.out.println(ret);
+			
 		
 		
 			for ( int i=0; i<bucketOfSME.contents.length; i++ ) {
@@ -315,12 +330,84 @@ public class LocalBackup implements Runnable {
 				final String fileName = bucketOfSME.contents.fileName.get(i);
 				final String fileSize = String.valueOf(bucketOfSME.contents.size.get(i));
 			
-				// From blob send data to local 
+				// Send file to local via blob 
 				blobClient.readFileOfSME(
 						smeInfo.getParm("smeID"),
 						"/" + fileName, 			
 						new HttpHandleGet() {
 							int ret;
+							int fileKey;
+							String privateKey = null;
+							AESEncrypt aes;
+							
+							private String getRandFileName() {
+								return UUID.randomUUID().toString();
+							}
+							
+							private boolean putEncryptFile(String remote, InputStream im) {
+								boolean ret = false;
+								FileOutputStream fom = null;
+								FileInputStream fim = null;
+								File tmpFile = null;
+								
+								try { 
+									aes = new AESEncrypt();
+									String fname = getRandFileName();
+									
+									tmpFile = new File("D:\\016_Workspace\\CDM_APP\\"+fname);
+									
+									// step1. get file from vblob and encrypt it.
+									System.out.println(tmpFile.getAbsolutePath());
+									fom = new FileOutputStream(tmpFile);
+									
+									aes.encryptFile(im, fom);
+									// step2. send encrypt file to CSG
+			
+									fim = new FileInputStream(tmpFile);
+									
+									if ( !localBackupClient.putFile(remote+".aes", fim) ) {
+										Log.printf("Send file fail by FTP Clinet\n");
+									}
+									ret = true;
+								} catch (FileNotFoundException e) {
+									Log.printf("%s\n", e.getMessage());
+								} catch (InvalidKeyException e) {
+									Log.printf("%s\n", e.getMessage());
+								} catch (NoSuchAlgorithmException e) {
+									Log.printf("%s\n", e.getMessage());
+								} catch (NoSuchPaddingException e) {
+									Log.printf("%s\n", e.getMessage());
+								} catch (IllegalBlockSizeException e) {
+									Log.printf("%s\n", e.getMessage());
+								} catch (BadPaddingException e) {
+									Log.printf("%s\n", e.getMessage());
+								} catch (IOException e) {
+									Log.printf("%s\n", e.getMessage());
+								} finally {
+									try {
+										im.close();
+										fom.close();
+										fim.close();
+										//tmpFile.delete();
+									} catch ( Exception e ) {
+										// noting
+									}
+								}
+								return ret;
+							}
+							
+							private String getFileKey() {
+								String key = "";
+								int keySite = aes.getFileKey();
+								
+								if ( keySite < 10) {
+									key = "0" +  keySite + "," + aes.getBase64PublicKey();
+								}  else {
+									key = keySite + "," + aes.getBase64PublicKey();
+								}
+								return key;
+							}
+							
 							@Override
 							public void handleContent(InputStream im) {
 								// PUT Soap to Soap server 
@@ -328,12 +415,12 @@ public class LocalBackup implements Runnable {
 									Log.printf("File[%s] already exsit\n",fileName);
 								} else if ( ret ==  SoapClient.RET.CONN_REFUSED ) { 
 									Log.printf("Connect to Soap Server fail\n");
-								} else if ( !localBackupClient.putFile(fileName, im)) {
-									Log.printf("Put File Command to Backup Storage fail\n");
-								} else if ( soapClient.putFile(smeInfo.getParm("smeID"), fileName,fileSize) < 0) {
+								} else if ( !putEncryptFile(fileName,im) ) {
+									Log.printf("Put Encrypt File to Backup Storage fail\n");
+								} else if ( soapClient.putFile(smeInfo.getParm("smeID"), fileName,fileSize, getFileKey()) < 0) {
 									Log.printf("Put Soap Commad to Soap Server fail\n");
 								} else {
-									Log.printf("finish\n");
+									Log.printf("finish2\n");
 								}
 							}
 						}

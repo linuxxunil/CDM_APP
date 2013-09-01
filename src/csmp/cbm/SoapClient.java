@@ -88,14 +88,14 @@ public class SoapClient extends Soap {
 		super(host,port);
 	}
 
-	public int putFile(final String smeID,final String fileName,final String filesize) {
+	public int putFile(final String smeID,final String fileName,final String fileSize,final String fileKey) {
 		class Content implements SoapHandle {
 			int result;
 			
 			public void request(OutputStream om)  throws IOException{
 				SimpleDateFormat ft = new SimpleDateFormat ("yyyy-MM-dd-hh-mm");
 				String msg = SoapMsgRequest.putFile(smeID, fileName, 
-							ft.format(new Date()), filesize);
+							ft.format(new Date()), fileSize, fileKey);
 				om.write(msg.getBytes());
 			}
 			

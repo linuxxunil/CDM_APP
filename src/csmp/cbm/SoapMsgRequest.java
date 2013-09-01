@@ -33,18 +33,19 @@ public class SoapMsgRequest {
 		return msg;
 	}
 	
-	public static String putFile(String smeID, String fileName, String date, String fileSize) {
+	public static String putFile(String smeID, String fileName, String date, String fileSize,String fileKey) {
 		String body = 
 		  "<ns:putFile>"					
 		+	"<putFile>" 					
 		+		"<SME-ID>%s</SME-ID>"		
 		+		"<FileName>%s</FileName>"	
 		+		"<FileDate>%s</FileDate>"
-		+		"<FileSize>%s</FileSize>"	
+		+		"<FileSize>%s</FileSize>"
+		+		"<FileKey>%s</FileKey>"
 		+	"</putFile>"					
 		+ "</ns:putFile>"					;
 						
-		String msg = String.format(getSoapMsg(body), smeID, fileName, date, fileSize);
+		String msg = String.format(getSoapMsg(body), smeID, fileName, date, fileSize, fileKey);
 		//Log.printf("%s\n",msg);
 		return msg;
 	}
@@ -76,4 +77,5 @@ public class SoapMsgRequest {
 		//Log.printf("%s\n",msg);
 		return msg;
 	}
+	
 }
