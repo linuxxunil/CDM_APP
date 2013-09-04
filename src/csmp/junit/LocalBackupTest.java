@@ -15,8 +15,8 @@ public class LocalBackupTest {
 	private int port = 21;
 	private String user = "csmp";
 	private String pass = "csmp";
-	private String putSrc = "README.txt";
-	private String putDst = "README.txt";
+	private String putSrc = "plainText.ppt";
+	private String putDst = "plainText.ppt";
 	private String getSrc = "README.txt";
 	private String getDst = "README.txt.bak";
 	
@@ -33,6 +33,7 @@ public class LocalBackupTest {
 	@Test
 	public void testPutFile() {
 		boolean result = _localBackupClient.putFile(putDst, putSrc);
+		System.out.println(result);
 		assertTrue(result);
 	}
 	@Test

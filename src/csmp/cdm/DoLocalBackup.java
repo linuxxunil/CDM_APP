@@ -2,13 +2,13 @@ package csmp.cdm;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.UnknownHostException;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import csmp.cdm.SmeInfo;
-import csmp.cdm.SmeExistException;
 import csmp.common.Log;
 
 
@@ -36,12 +36,8 @@ public class DoLocalBackup extends HttpServlet{
 		return 0;
 	}
 	
-	private void handle(SmeInfo smeInfo) throws SmeExistException{
-		try {
+	private void handle(SmeInfo smeInfo) throws SmeRunningException,SmeNoExistException,UnknownHostException{
 			new LocalBackup(smeInfo);
-		} catch ( SmeExistException e ) {
-			throw e;
-		}
 	}
 
 	@Override
@@ -60,7 +56,11 @@ public class DoLocalBackup extends HttpServlet{
 				handle(smeInfo);
 				out.println("<code>0</code>\n<SME-ID>"+smeInfo.getParm("smeID")+"</SME-ID>");
 			
-			} catch ( SmeExistException e ) {
+			} catch ( SmeRunningException e ) {
+				out.println(e.getMessage());
+			} catch ( SmeNoExistException e ) {
+				out.println(e.getMessage());
+			} catch ( UnknownHostException e ) {
 				out.println(e.getMessage());
 			}
 		}

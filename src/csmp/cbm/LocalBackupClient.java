@@ -39,7 +39,16 @@ class FtpClient {
 	
 	private void setPassive() {
 		client.enterLocalPassiveMode();
-
+	}
+	
+	private void setBinaryMode() {
+		try {
+			client.setFileType(FTP.BINARY_FILE_TYPE);
+			client.setFileTransferMode(FTP.BINARY_FILE_TYPE);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	private boolean connect()  {
@@ -79,6 +88,7 @@ class FtpClient {
 			return false;
 		}
 		setPassive();
+		setBinaryMode();
 		try {
 			ret = client.storeFile(remoteFile, im);
 		} catch (IOException e) {
@@ -101,6 +111,7 @@ class FtpClient {
 			return false;
 		}
 		setPassive();
+		setBinaryMode();
 		int i=0;
 		
 		for ( i=0; i<localFiles.length; i++ ) {
@@ -131,6 +142,7 @@ class FtpClient {
 			return false;
 		}
 		setPassive();
+		setBinaryMode();
 		int i=0;
 		
 		for ( i=0; i<localFiles.length; i++ ) {

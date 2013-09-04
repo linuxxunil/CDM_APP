@@ -20,6 +20,7 @@ import org.productivity.java.syslog4j.util.Base64;
 import csmp.common.Convert;
 
 
+
 class AES {
 	private SecretKeySpec skeySpec;
 	private Cipher cipher;
@@ -77,7 +78,8 @@ class AES {
 		return cipher.doFinal(byteArray, offset, len);
 	}	
 	
-	public  byte[] decrypt( byte[] byteArray ) throws Exception{
+	public  byte[] decrypt( byte[] byteArray ) 
+			throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
 		return decrypt( byteArray, 0, byteArray.length);
 	}
 	
@@ -100,11 +102,8 @@ class AES {
 		 int length = -1;
 		 
         while((length = fim.read(buffer, 0, buffer.length)) != -1) { 
-        	if ( length < buffer.length ) {
-        		setPKCS5Padding();
-        	}else {
-        		setNoPadding();
-        	}
+        	if ( length < buffer.length ) setPKCS5Padding();
+        	else setNoPadding();
        	 
        	 	byte[] decoder = encrypt(buffer, 0, length);
        	 	
@@ -118,17 +117,13 @@ class AES {
 		int length = -1;
    	 
 		while((length = fim.read(buffer,0,buffer.length)) != -1) { 
-			if ( length < buffer.length ) setPKCS5Padding();
+			if ( length > buffer.length ) setPKCS5Padding();
 			else setNoPadding();
 			
 			byte[] decoder = decrypt(buffer, 0, length);
 			fom.write(decoder, 0, decoder.length);
 		} 
 	}
-	
-
-	
-
 	
 	public static void demoRandomKey() throws Exception {
 		//CDM_AES aes = new CDM_AES();
@@ -139,6 +134,7 @@ class AES {
 }
 
 class Demo {
+	
 	public static void demoStringCrypt() throws Exception {
 		System.out.println("### Demo String Encrypt and Decrypt");
 		
@@ -163,9 +159,9 @@ class Demo {
 	public static void demoFileCrypt()  throws Exception {
 		System.out.println("### Demo File Encrypt and Decrypt");
 		
-		String plainFile = "plainText.txt";
-		String encodeFile = "encode.txt";
-		String decodeFile = "decode.txt";
+		String plainFile = "plainText.ppt";
+		String encodeFile = "encode.ppt";
+		String decodeFile = "decode.ppt";
 		
 		FileInputStream plainText = 
 				new FileInputStream(new File(plainFile)); 
@@ -174,9 +170,11 @@ class Demo {
 				new FileOutputStream(new File(encodeFile)); 
 	
 		AESEncrypt aes = new AESEncrypt();
+		aes.setEncryptMode();
 		
 		// encrypt file
-		System.out.println(plainFile + " encrypt to " + encodeFile);
+		System.out.println(plainFile + " encrypt to " + encodeFile +
+				" (Key: " + aes.getFileKey() + "," + aes.getBase64PublicKey() +")");
 		aes.encryptFile(plainText, encode);
 		
 		FileInputStream cipherText = 
@@ -187,6 +185,7 @@ class Demo {
 		
 		// decrypt file
 		System.out.println(encodeFile + " decrypt to " + decodeFile);
+		aes.setDecryptMode(aes.getFileKey(), aes.getBase64PublicKey());
 		aes.decryptFile(cipherText, decode);
 		
 
@@ -196,17 +195,43 @@ class Demo {
 		decode.close();	
 	}
 
+	public static void DemoFileDecrypt()  throws Exception {
+		String encodeFile = "encode.ppt";
+		String decodeFile = "decode.ppt";
+		
+		//06,HARsz8VlC8RiZVvYVghDUQ==
+
+		AESEncrypt aes = new AESEncrypt();
+		aes.setDecryptMode(5, "hJbvHVbxrUDDTjAqa5tHfA==");
+		
+		FileInputStream cipherText = 
+				new FileInputStream(new File(encodeFile));
+		
+		FileOutputStream decode = 
+				new FileOutputStream(new File(decodeFile));
+		
+		// decrypt file
+		System.out.println(encodeFile + " decrypt to " + decodeFile);
+		aes.decryptFile(cipherText, decode);
+		
+		cipherText.close();
+		decode.close();	
+		
+	}
 	public static void main(String[] args) throws Exception {
 		
-		Demo.demoStringCrypt();
-
-		Demo.demoFileCrypt();
+		//Demo.demoStringCrypt();
+		
+		//Demo.demoFileCrypt();
+		
+		//DemoFileDecrypt();
      }
 }
 
 /**
- * 1. Use default key encrypt private key
- * 2. deliver  
+ * prviateKey	: random produce
+ * publicKey	: encrypt( privateKey, defaultKey )
+ * fileKey		: Site of default key 
  * @author jesse
  *
  */
@@ -261,27 +286,46 @@ public class AESEncrypt  {
 	private int keyLen;
 	private int fileKey; 
 	
-	public AESEncrypt() 
-			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, 
-			IllegalBlockSizeException, BadPaddingException  {
+	public AESEncrypt() {
 		this(128);
 	}
 	
-	public AESEncrypt(int bit) 
-			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, 
-					IllegalBlockSizeException, BadPaddingException  {
+	public AESEncrypt(int bit) {
 		keyLen = bit / 8;
-		privateKey = produceRandomKey(bit);
+	}
+	
+	public void setEncryptMode() throws NoSuchAlgorithmException, NoSuchPaddingException, 
+					InvalidKeyException, IllegalBlockSizeException, BadPaddingException  {
+		
+		privateKey = produceRandomKey(keyLen*8);
 		
 		fileKey = (int)(Math.random()*10);
+
 		// private key is encrypted by default key.
 		aes = new AES(defaultKey[fileKey]);
 		aes.setNoPadding();
 		publicKey = aes.encrypt(privateKey);
 		
 		aes = new AES(privateKey);	
+	} 
+	
+	public void setDecryptMode(int fileKey, String base64PublicKey)throws NoSuchAlgorithmException,
+		NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException  {
+		setDecryptMode(fileKey,Base64.decode(base64PublicKey));
 	}
-
+	
+	public void setDecryptMode(int fileKey, byte[] publicKey)throws NoSuchAlgorithmException,
+			NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException  {
+		this.fileKey = fileKey;
+		this.publicKey = publicKey;
+		
+		aes = new AES(defaultKey[fileKey]);
+		aes.setNoPadding();
+		privateKey = aes.decrypt(publicKey);
+		System.out.println(Convert.byte2str(privateKey));
+		aes = new AES(privateKey);
+	}
+	
 	public byte[] getPublicKey() {
 		return publicKey;
 	}
@@ -310,8 +354,9 @@ public class AESEncrypt  {
 			throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, IOException  {
 		aes.encryptFile(fim,fom);
 	}
+	
 	public void decryptFile(InputStream fim, OutputStream fom)
 			throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, IOException  {
-		aes.encryptFile(fim,fom);
+		aes.decryptFile(fim,fom);
 	}
 }

@@ -42,10 +42,14 @@ class SmeInfo {
 
 	private SmeInfo() {
 		hash = new Hashtable<String,String>();
-		//setParm( _keys[0] , "192.168.11.200");
-		//setParm( _keys[1] , "9981");
-		setParm( _keys[0] , System.getenv("vblob_host"));
-		setParm( _keys[1] , System.getenv("vblob_port"));
+		
+		if ( System.getenv("use_cloudfoundry") == null ) {
+			setParm( _keys[0] , "192.168.11.200");
+			setParm( _keys[1] , "9981");
+		} else {
+			setParm( _keys[0] , System.getenv("vblob_host"));
+			setParm( _keys[1] , System.getenv("vblob_port"));
+		}
 	}
 	
 	static public SmeInfo create() {
@@ -263,24 +267,45 @@ class SmeList {
 }
 
 
-class SmeExistException extends Exception {
-	SmeExistException() {
-		super("<code>1</code>\n<stats>Backup already is running</status>\n");
+class SmeNoExistException extends Exception {
+	SmeNoExistException(String smeID) {
+		super("<code>2</code>\n<stats>SME-ID(" + smeID + ") don't exit</status>\n");
+	}
+}
+
+class SmeRunningException extends Exception {
+	SmeRunningException() {
+		super("<code>1</code>\n<stats>Backup is already running</status>\n");
 	}
 }
 
 public class LocalBackup implements Runnable {
 	private SmeInfo smeInfo = null; 
+	private BlobClient blobClient = null;
 	
-	LocalBackup(SmeInfo smeInfo) throws SmeExistException {
+	LocalBackup(SmeInfo smeInfo) throws SmeRunningException,SmeNoExistException,UnknownHostException {
 		SmeList smeList = new SmeList();
 		
-		if ( smeList.add(smeInfo) == SmeList.RET.OK ) {
-			this.smeInfo = smeInfo;
-			start();
-		} else {
-			throw new SmeExistException();
+		try {
+			blobClient = new BlobClient(smeInfo.getParm("blobHost") ,
+						Integer.valueOf(smeInfo.getParm("blobPort")));
+			
+			if ( blobClient.existsSME(smeInfo.getParm("smeID")) != 0 ){
+				throw new SmeNoExistException(smeInfo.getParm("smeID"));
+			} 
+			
+			if ( smeList.add(smeInfo) == SmeList.RET.OK ) {
+				this.smeInfo = smeInfo;
+				start();
+			} else {
+				throw new SmeRunningException();
+			}
+		} catch (UnknownHostException e) {
+			throw new UnknownHostException();
 		}
+		
+		
+		
 	}
 	
 	private void backupLog(String msg) {
@@ -300,15 +325,6 @@ public class LocalBackup implements Runnable {
 	public void run() {
 		backupLog("Start backup to CSG");
 		do {
-			BlobClient blobClient = null;
-
-			try {
-				blobClient = new BlobClient(smeInfo.getParm("blobHost") ,
-							Integer.valueOf(smeInfo.getParm("blobPort")));
-			} catch (UnknownHostException e) {
-				//Log
-			}
-		
 			final BucketOfSME bucketOfSME = new BucketOfSME();
 		
 			final LocalBackupClient  localBackupClient = 
@@ -323,8 +339,6 @@ public class LocalBackup implements Runnable {
 		
 			int ret = blobClient.listBucketOfSME( smeInfo.getParm("smeID") , bucketOfSME );
 			
-		
-		
 			for ( int i=0; i<bucketOfSME.contents.length; i++ ) {
 			
 				final String fileName = bucketOfSME.contents.fileName.get(i);
@@ -352,12 +366,14 @@ public class LocalBackup implements Runnable {
 								
 								try { 
 									aes = new AESEncrypt();
+									aes.setEncryptMode();
+									
 									String fname = getRandFileName();
 									
-									tmpFile = new File("D:\\016_Workspace\\CDM_APP\\"+fname);
+									tmpFile = new File("/tmp/cdm_"+fname);
+									//tmpFile = new File("D://cdm_"+fname);
 									
 									// step1. get file from vblob and encrypt it.
-									System.out.println(tmpFile.getAbsolutePath());
 									fom = new FileOutputStream(tmpFile);
 									
 									aes.encryptFile(im, fom);
@@ -388,7 +404,7 @@ public class LocalBackup implements Runnable {
 										im.close();
 										fom.close();
 										fim.close();
-										//tmpFile.delete();
+										tmpFile.delete();
 									} catch ( Exception e ) {
 										// noting
 									}
@@ -398,7 +414,7 @@ public class LocalBackup implements Runnable {
 							
 							private String getFileKey() {
 								String key = "";
-								int keySite = aes.getFileKey();
+								int keySite = aes.getFileKey()+1;
 								
 								if ( keySite < 10) {
 									key = "0" +  keySite + "," + aes.getBase64PublicKey();
@@ -420,7 +436,7 @@ public class LocalBackup implements Runnable {
 								} else if ( soapClient.putFile(smeInfo.getParm("smeID"), fileName,fileSize, getFileKey()) < 0) {
 									Log.printf("Put Soap Commad to Soap Server fail\n");
 								} else {
-									Log.printf("finish2\n");
+									Log.printf("File(%s) success\n",fileName);
 								}
 							}
 						}

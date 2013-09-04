@@ -402,6 +402,22 @@ public class BlobClient extends Restful {
 		}
 	}
 	
+	public int existsSME(final String smeID) {
+		try { 
+			int ret = restGet(smeID,null);
+			
+			if ( ret == HttpURLConnection.HTTP_OK ||
+					ret == HttpURLConnection.HTTP_NO_CONTENT ) {
+				return ReturnCode.OK;
+			} else {
+				return ret;
+			}
+		} catch (IOException e) {
+			// Log
+			return ReturnCode.IOException;
+		}
+	}
+	
 	public int readFileOfSME(String smeID,String filePath, HttpHandleGet get) {
 		try {		
 			int ret = restGet( smeID + filePath, get );

@@ -33,6 +33,13 @@ public class BlobClientTest {
 	}
 	
 	@Test
+	public void testExistsSME() {
+		int expected = 0;
+		int result = _blobClient.existsSME(_smapleSME);
+		assertEquals(expected, result);
+	}
+	
+	@Test
 	public void testUploadFile() {
 		int expected = 0;
 		int result = _blobClient.uploadFile(_smapleSME, _srcPath, _dstPath);
@@ -49,8 +56,8 @@ public class BlobClientTest {
 	@Test
 	public void testDeleteSME() {
 		int expected = 0;
-		int result = _blobClient.deleteSME("SME-1");
+		int result = _blobClient.deleteSME(_smapleSME);
 		assertEquals(expected, result);
 	}
-
+	
 }
