@@ -13,7 +13,7 @@ import csmp.common.XmlParser;
 
 
 public class SoapMsgResponse extends XmlParser{
-
+	
 	SoapMsgResponse(String xml) throws ParserConfigurationException, SAXException, IOException {
 		super(xml);
 	}

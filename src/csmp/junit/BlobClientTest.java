@@ -7,6 +7,8 @@ import java.net.UnknownHostException;
 import org.junit.Before;
 import org.junit.After;
 import org.junit.Test;
+
+import csmp.common.Log;
 import csmp.csm.BlobClient;;
 
 public class BlobClientTest {

@@ -46,7 +46,7 @@ class Soap {
 		httpConn.setRequestProperty("Cache-Control", "no-cache" ) ;   
 		httpConn.setRequestProperty("Content-Type", "application/soap+xml; charset=utf-8");
 		httpConn.setRequestProperty("SOAPAction", "http://www.w3.org/2003/05/soap-envelope");
-
+		httpConn.setReadTimeout(15000);
 		httpConn.setDoOutput(true); 
 		httpConn.setDoInput(true); 
 		
@@ -60,12 +60,12 @@ class Soap {
 		OutputStream om = null;
 		InputStream im = null;
 		
-		
-		
-		httpConn.connect();
+		httpConn.connect();	
 		om = httpConn.getOutputStream();
 		soap.request(om);
+
 		httpCode = httpConn.getResponseCode();
+
 		im = httpConn.getInputStream();
 		soap.response(im);
 		httpConn.disconnect();
@@ -87,7 +87,7 @@ public class SoapClient extends Soap {
 	public SoapClient(String host,int port){
 		super(host,port);
 	}
-
+	
 	public int putFile(final String smeID,final String fileName,final String fileSize,final String fileKey) {
 		class Content implements SoapHandle {
 			int result;
@@ -107,12 +107,12 @@ public class SoapClient extends Soap {
 				while((len = im.read(buf)) > 0) {
 					xml += new String(buf,0,len);
 				}	
+				
 				try {
 					SoapMsgResponse response = new SoapMsgResponse(xml);
 					result = response.putFile();
 				//} catch (ParserConfigurationException | SAXException e) {
 				} catch (Exception e) {
-					//Log.printf("%s\n", e.getMessage());
 					result = RET.XML_PARSER_ERROR;
 				}
 			}
@@ -123,7 +123,7 @@ public class SoapClient extends Soap {
 			soapPost(content);
 			return content.result;
 		} catch ( IOException e ) {
-			//Log.printf("IOException, %s\n",e.getMessage());
+			Log.printf("IOException(putFile), %s\n",e.getMessage());
 			return RET.CONN_REFUSED;
 		}
 	}
@@ -151,13 +151,13 @@ public class SoapClient extends Soap {
 				while((len = im.read(buf)) > 0) {
 					xml += new String(buf,0,len);
 				}	
-
+				
 				try {
 					SoapMsgResponse response = new SoapMsgResponse(xml);
 					result = response.deleteFile();
 				//} catch (ParserConfigurationException | SAXException e) {
 				} catch (Exception e) {
-					Log.printf("%s\n", e.getMessage());
+					//Log.printf("%s\n", e.getMessage());
 					result = RET.XML_PARSER_ERROR;
 				}
 			}
@@ -168,7 +168,7 @@ public class SoapClient extends Soap {
 			soapPost(content);
 			return content.result;
 		} catch ( IOException e ) {
-			Log.printf("IOException, %s\n",e.getMessage());
+			Log.printf("IOException(delFile), %s\n",e.getMessage());
 			return RET.CONN_REFUSED;
 		}
 	}
@@ -186,16 +186,16 @@ public class SoapClient extends Soap {
 				int len;
 				byte[] buf = new byte[1024];
 				String xml = "";
-				
+	
 				while((len = im.read(buf)) > 0) {
 					xml += new String(buf,0,len);
 				}	
-	
+		
 				try {
 					SoapMsgResponse response = new SoapMsgResponse(xml);
 					result = response.getFile();
 				} catch (Exception e) {
-					Log.printf("%s\n", e.getMessage());
+					//Log.printf("%s\n", e.getMessage());
 					result =  RET.XML_PARSER_ERROR;
 				}
 			}
@@ -206,8 +206,7 @@ public class SoapClient extends Soap {
 			soapPost(content);
 			return content.result;
 		} catch ( IOException e ) {
-
-			Log.printf("IOException, %s\n",e.getMessage());
+			Log.printf("IOException(getFile), %s\n",e.getMessage());
 			return RET.CONN_REFUSED;
 		}
 	}

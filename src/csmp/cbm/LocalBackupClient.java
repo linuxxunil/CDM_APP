@@ -44,9 +44,8 @@ class FtpClient {
 	private void setBinaryMode() {
 		try {
 			client.setFileType(FTP.BINARY_FILE_TYPE);
-			client.setFileTransferMode(FTP.BINARY_FILE_TYPE);
+			//client.setFileTransferMode(FTP.BINARY_FILE_TYPE);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -87,9 +86,12 @@ class FtpClient {
 		}  else if (!connect() || !login() ) {
 			return false;
 		}
+		
 		setPassive();
 		setBinaryMode();
+		
 		try {
+			Log.printf("FTP: Put file[%s] to FTP Server[%s:%d]\n",remoteFile,host,port);
 			ret = client.storeFile(remoteFile, im);
 		} catch (IOException e) {
 			Log.printf("disconnect fail\n");
@@ -107,30 +109,31 @@ class FtpClient {
 		} else if ( remoteFiles.length != localFiles.length ) {
 			Log.printf("remote path != local paths\n");
 			return false;
-		} else if (!connect() || !login() ) {
-			return false;
-		}
-		setPassive();
-		setBinaryMode();
-		int i=0;
+		} 
 		
-		for ( i=0; i<localFiles.length; i++ ) {
+		boolean ret = false;
+		FileInputStream im = null;
+		for (int i=0; i<localFiles.length; i++ ) {
 			try {
-				FileInputStream im = new FileInputStream(new File(localFiles[i]));
-				client.storeFile(remoteFiles[i], im);
-				im.close();
+				im = new FileInputStream(new File(localFiles[i]));
+				ret = storeFile(remoteFiles[i], im) ;
+				
 			} catch (FileNotFoundException e) {
 				Log.printf("copy %s to %s fail\n",localFiles[i],remoteFiles[i]);
 				return false;
 			}  catch (IOException e) {
 				Log.printf("copy %s to %s fail\n",localFiles[i],remoteFiles[i]);
 				return false;
+			} finally {
+				try {
+					im.close();
+					if ( ret == false ) return false;
+				} catch (IOException e) {
+					// nothing
+				}
 			}
 		}
 		
-		if (!logout() || !disconnect() ) {
-			return false;
-		}
 		return true;
 	}
 

@@ -2,6 +2,10 @@ package csmp.junit;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.UnknownHostException;
 
 import org.junit.After;
@@ -33,8 +37,8 @@ public class LocalBackupTest {
 	@Test
 	public void testPutFile() {
 		boolean result = _localBackupClient.putFile(putDst, putSrc);
-		System.out.println(result);
-		assertTrue(result);
+			System.out.println(result);
+			assertTrue(result);
 	}
 	@Test
 	public void testGetFile() {

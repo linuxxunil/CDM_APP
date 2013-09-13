@@ -336,7 +336,6 @@ public class LocalBackup implements Runnable {
 			final SoapClient soapClient = new SoapClient(smeInfo.getParm("host"),
 										Integer.valueOf(smeInfo.getParm("soapPort")));
 		
-		
 			int ret = blobClient.listBucketOfSME( smeInfo.getParm("smeID") , bucketOfSME );
 			
 			for ( int i=0; i<bucketOfSME.contents.length; i++ ) {
@@ -369,22 +368,24 @@ public class LocalBackup implements Runnable {
 									aes.setEncryptMode();
 									
 									String fname = getRandFileName();
+
+									//tmpFile = new File("/tmp/cdm_"+fname);
+									tmpFile = new File("D://cdm_"+fname);
+									Log.printf("tmpFile[%s]\n","/tmp/cdm_"+fname);
 									
-									tmpFile = new File("/tmp/cdm_"+fname);
-									//tmpFile = new File("D://cdm_"+fname);
 									
 									// step1. get file from vblob and encrypt it.
 									fom = new FileOutputStream(tmpFile);
 									
 									aes.encryptFile(im, fom);
-									// step2. send encrypt file to CSG
-			
-									fim = new FileInputStream(tmpFile);
 									
+									// step2. send encrypt file to CSG
+									fim = new FileInputStream(tmpFile);
 									if ( !localBackupClient.putFile(remote+".aes", fim) ) {
-										Log.printf("Send file fail by FTP Clinet\n");
-									}
-									ret = true;
+										Log.printf("Send file[%s.aes] fail by FTP Clinet\n",remote);
+									} else 
+										ret = true;
+									
 								} catch (FileNotFoundException e) {
 									Log.printf("%s\n", e.getMessage());
 								} catch (InvalidKeyException e) {
@@ -430,13 +431,13 @@ public class LocalBackup implements Runnable {
 								if ((ret = soapClient.getFile(smeInfo.getParm("smeID"), fileName)) >= 0 ) {
 									Log.printf("File[%s] already exsit\n",fileName);
 								} else if ( ret ==  SoapClient.RET.CONN_REFUSED ) { 
-									Log.printf("Connect to Soap Server fail\n");
+									Log.printf("ERROR: Soap server refused\n");
 								} else if ( !putEncryptFile(fileName,im) ) {
-									Log.printf("Put Encrypt File to Backup Storage fail\n");
+									Log.printf("ERROR: Encrypt file failed\n");
 								} else if ( soapClient.putFile(smeInfo.getParm("smeID"), fileName,fileSize, getFileKey()) < 0) {
-									Log.printf("Put Soap Commad to Soap Server fail\n");
+									Log.printf("ERROR: Soap request[%s] failed\n",fileName);
 								} else {
-									Log.printf("File(%s) success\n",fileName);
+									Log.printf("File[%s] success\n",fileName);
 								}
 							}
 						}
