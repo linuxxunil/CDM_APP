@@ -369,8 +369,8 @@ public class LocalBackup implements Runnable {
 									
 									String fname = getRandFileName();
 
-									//tmpFile = new File("/tmp/cdm_"+fname);
-									tmpFile = new File("D://cdm_"+fname);
+									tmpFile = new File("/tmp/cdm_"+fname);
+									//tmpFile = new File("D://cdm_"+fname);
 									Log.printf("tmpFile[%s]\n","/tmp/cdm_"+fname);
 									
 									
