@@ -429,7 +429,7 @@ public class LocalBackup implements Runnable {
 							public void handleContent(InputStream im) {
 								// PUT Soap to Soap server 
 								if ((ret = soapClient.getFile(smeInfo.getParm("smeID"), fileName)) >= 0 ) {
-									Log.printf("File[%s] already exsit\n",fileName);
+									Log.printf("WARING: File[%s] already exsit\n",fileName);
 								} else if ( ret ==  SoapClient.RET.CONN_REFUSED ) { 
 									Log.printf("ERROR: Soap server refused\n");
 								} else if ( !putEncryptFile(fileName,im) ) {
